@@ -1,0 +1,20 @@
+name: Python quality checks in Docker
+on: [push, pull_request, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  pytest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -t python-qa .
+      - name: Run parallel tests
+        run: |
+          mkdir -p reports
+          docker run --rm -v "$PWD/reports:/app/reports" python-qa sh -c 'python -m scripts.evaluate && python -m pytest -n 2 --html=reports/pytest.html --self-contained-html --junitxml=reports/junit.xml'
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pytest-reports
+          path: reports
